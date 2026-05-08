@@ -36,9 +36,7 @@ body {
     font-size: 2vw;
     margin-bottom: 20px;
     opacity: 0.9;
-    letter-spacing: 2px;
     text-align: center;
-    z-index: 3;
 }
 
 #counter {
@@ -46,9 +44,6 @@ body {
     font-weight: bold;
     opacity: 0.03;
     filter: blur(1px);
-    user-select: none;
-    text-shadow: 0 0 8px white;
-    z-index: 3;
 }
 
 #clock {
@@ -57,7 +52,6 @@ body {
     right: 16px;
     font-size: 18px;
     opacity: 0.7;
-    z-index: 3;
 }
 
 .side {
@@ -70,13 +64,11 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    z-index: 2;
 }
 
 #left { left: 10px; }
 #right { right: 10px; }
 
-/* 🔥 faster spin */
 .spin {
     width: 140px;
     height: 140px;
@@ -109,18 +101,16 @@ body {
     opacity: 0.7;
 }
 
-/* 🎬 ALT IMAGE FADE SYSTEM */
+/* ALT IMAGE FADE */
 #altFlash {
     position: absolute;
     width: 100%;
     height: 100%;
     z-index: 999;
     object-fit: cover;
-
     opacity: 0;
     display: none;
     pointer-events: none;
-
     transition: opacity 0.6s ease-in-out;
 }
 </style>
@@ -128,12 +118,12 @@ body {
 
 <body>
 
-<audio id="bgmusic" src="song.mp3" autoplay loop></audio>
+<audio id="bgmusic" src="song.mp3" loop></audio>
 <audio id="altmusic" src="alt.mp3"></audio>
 
 <img id="altFlash" src="alt.png"/>
 
-<div id="clock">00:00:00 EST</div>
+<div id="clock">--:--:-- EST</div>
 <div id="header">LIVE AIDEN GOON COUNTER</div>
 <div id="title">show up to school aiden 😂</div>
 <div id="counter">0</div>
@@ -149,6 +139,8 @@ body {
 </div>
 
 <script>
+window.onload = () => {
+
 const counter = document.getElementById("counter");
 const clock = document.getElementById("clock");
 const chatLeft = document.getElementById("chatLeft");
@@ -162,23 +154,10 @@ music.volume = 0.12;
 
 let altActive = false;
 
-/* keep audio alive */
-document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && music.paused && !altActive) {
-        music.play();
-    }
-});
-
-/* prevent accidental refresh */
-window.addEventListener("beforeunload", (e) => {
-    e.preventDefault();
-    e.returnValue = "";
-});
-
-/* autoplay unlock */
+/* unlock audio */
 document.addEventListener("click", () => {
-    music.play();
-});
+    music.play().catch(()=>{});
+}, { once: true });
 
 /* CHAT */
 const messages = [
@@ -190,12 +169,12 @@ const messages = [
     "aiden stock down 900%",
     "someone reset the goon counter",
     "this is unempluzzed behaviour",
-    "breaking: aidin din din done detected",
+    "breaking: aidin detected",
     "bro is a strawberry"
-    "happy birthday daniel"
 ];
 
 function addChat(box) {
+    if (!box) return;
     const msg = document.createElement("div");
     msg.className = "msg";
     msg.textContent = messages[Math.floor(Math.random() * messages.length)];
@@ -208,19 +187,12 @@ setInterval(() => {
     addChat(chatRight);
 }, 900);
 
-/* clock */
+/* CLOCK */
 function getESTNow() {
     return new Date(new Date().toLocaleString("en-US", {
         timeZone: "America/New_York"
     }));
 }
-
-function getDateString() {
-    return getESTNow().toLocaleDateString("en-CA");
-}
-
-let currentDate = getDateString();
-let value = 0;
 
 function updateClock() {
     const now = getESTNow();
@@ -230,7 +202,7 @@ function updateClock() {
         String(now.getSeconds()).padStart(2,"0") + " EST";
 }
 
-/* 🎬 ALT EVENT (FADE VERSION) */
+/* ALT EVENT */
 function triggerAlt() {
     if (altActive) return;
     altActive = true;
@@ -239,13 +211,12 @@ function triggerAlt() {
 
     flash.style.display = "block";
 
-    // force reflow so transition works
     requestAnimationFrame(() => {
         flash.style.opacity = "1";
     });
 
     alt.currentTime = 0;
-    alt.play();
+    alt.play().catch(()=>{});
 
     function endAlt() {
         flash.style.opacity = "0";
@@ -255,15 +226,13 @@ function triggerAlt() {
         }, 600);
 
         alt.pause();
-        music.play();
+        music.play().catch(()=>{});
         altActive = false;
     }
 
     alt.onended = endAlt;
 
-    setTimeout(() => {
-        if (altActive) endAlt();
-    }, 6000);
+    setTimeout(endAlt, 6000);
 }
 
 /* 1% chance per second */
@@ -271,29 +240,26 @@ setInterval(() => {
     if (Math.random() < 0.01) triggerAlt();
 }, 1000);
 
-/* MAIN LOOP (never stops) */
+/* COUNTER + LOOP */
+let value = 0;
+
 function tick() {
-    const newDate = getDateString();
-
-    if (newDate !== currentDate) {
-        currentDate = newDate;
-        value = 0;
-    }
-
     value += Math.floor(Math.random() * 9000) + 1000;
+
+    counter.textContent = value.toLocaleString();
 
     counter.style.opacity = 0.02 + Math.random() * 0.03;
     counter.style.filter = `blur(${0.6 + Math.random() * 1.5}px)`;
     counter.style.transform =
         `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
 
-    counter.textContent = value.toLocaleString();
-
     updateClock();
     requestAnimationFrame(tick);
 }
 
 tick();
+
+};
 </script>
 
 </body>
