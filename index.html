@@ -2,122 +2,286 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Aiden Fields Live Goon Count</title>
 
 <style>
-    html, body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: black;
-        font-family: Arial, sans-serif;
-    }
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: black;
+    font-family: Arial, sans-serif;
+    color: white;
+}
 
-    body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        color: white;
-    }
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
 
-    #title {
-        font-size: 2vw;
-        margin-bottom: 20px;
-        opacity: 0.9;
-        letter-spacing: 2px;
-        text-align: center;
-    }
+#header {
+    position: absolute;
+    top: 50px;
+    font-size: 3vw;
+    font-weight: bold;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px white;
+}
 
-    #counter {
-        font-size: 7vw;
-        font-weight: bold;
-        color: white;
-        opacity: 0.03;
-        filter: blur(1px);
-        user-select: none;
-        text-shadow:
-            0 0 2px white,
-            0 0 4px white,
-            0 0 8px white;
-    }
+#title {
+    font-size: 2vw;
+    margin-bottom: 20px;
+    opacity: 0.9;
+    letter-spacing: 2px;
+    text-align: center;
+    z-index: 3;
+}
 
-    #clock {
-        position: absolute;
-        top: 12px;
-        right: 16px;
-        font-size: 18px;
-        opacity: 0.7;
-        letter-spacing: 1px;
-    }
+#counter {
+    font-size: 7vw;
+    font-weight: bold;
+    opacity: 0.03;
+    filter: blur(1px);
+    user-select: none;
+    text-shadow: 0 0 8px white;
+    z-index: 3;
+}
 
-    #tiny {
-        position: absolute;
-        bottom: 8px;
-        right: 12px;
-        font-size: 10px;
-        opacity: 0.2;
-    }
+#clock {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 18px;
+    opacity: 0.7;
+    z-index: 3;
+}
+
+.side {
+    position: absolute;
+    top: 50%;
+    width: 280px;
+    height: 450px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 2;
+}
+
+#left { left: 10px; }
+#right { right: 10px; }
+
+/* 🔥 faster spin */
+.spin {
+    width: 140px;
+    height: 140px;
+    animation: spin 0.9s linear infinite;
+    filter: drop-shadow(0 0 10px white);
+}
+
+#right .spin {
+    animation-direction: reverse;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.chat {
+    width: 100%;
+    height: 270px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 6px;
+    font-size: 12px;
+    opacity: 0.8;
+    background: rgba(255,255,255,0.02);
+}
+
+.msg {
+    margin: 4px 0;
+    opacity: 0.7;
+}
+
+/* 🎬 ALT IMAGE FADE SYSTEM */
+#altFlash {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+    object-fit: cover;
+
+    opacity: 0;
+    display: none;
+    pointer-events: none;
+
+    transition: opacity 0.6s ease-in-out;
+}
 </style>
 </head>
+
 <body>
 
+<audio id="bgmusic" src="song.mp3" autoplay loop></audio>
+<audio id="altmusic" src="alt.mp3"></audio>
+
+<img id="altFlash" src="alt.png"/>
+
 <div id="clock">00:00:00 EST</div>
-
-<div id="title">
-    aiden fields live goon count
-</div>
-
+<div id="header">LIVE AIDEN GOON COUNTER</div>
+<div id="title">show up to school aiden 😂</div>
 <div id="counter">0</div>
 
-<div id="tiny">
-    resets at EST midnight
+<div class="side" id="left">
+    <img class="spin" src="left.png"/>
+    <div class="chat" id="chatLeft"></div>
+</div>
+
+<div class="side" id="right">
+    <img class="spin" src="right.png"/>
+    <div class="chat" id="chatRight"></div>
 </div>
 
 <script>
 const counter = document.getElementById("counter");
 const clock = document.getElementById("clock");
+const chatLeft = document.getElementById("chatLeft");
+const chatRight = document.getElementById("chatRight");
 
-function getESTNow() {
-    return new Date(
-        new Date().toLocaleString("en-US", {
-            timeZone: "America/New_York"
-        })
-    );
+const music = document.getElementById("bgmusic");
+const alt = document.getElementById("altmusic");
+const flash = document.getElementById("altFlash");
+
+music.volume = 0.12;
+
+let altActive = false;
+
+/* keep audio alive */
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && music.paused && !altActive) {
+        music.play();
+    }
+});
+
+/* prevent accidental refresh */
+window.addEventListener("beforeunload", (e) => {
+    e.preventDefault();
+    e.returnValue = "";
+});
+
+/* autoplay unlock */
+document.addEventListener("click", () => {
+    music.play();
+});
+
+/* CHAT */
+const messages = [
+    "aiden is a chud",
+    "aiden goons are critical mass",
+    "aiden is a basiatakis blud",
+    "live aiden incident unfolding",
+    "chat is releasing te gubbehs",
+    "aiden stock down 900%",
+    "someone reset the goon counter",
+    "this is unempluzzed behaviour",
+    "breaking: aidin din din done detected",
+    "bro is a strawberry"
+    "happy birthday daniel"
+];
+
+function addChat(box) {
+    const msg = document.createElement("div");
+    msg.className = "msg";
+    msg.textContent = messages[Math.floor(Math.random() * messages.length)];
+    box.appendChild(msg);
+    if (box.children.length > 12) box.removeChild(box.firstChild);
 }
 
-function getESTDateString() {
+setInterval(() => {
+    addChat(chatLeft);
+    addChat(chatRight);
+}, 900);
+
+/* clock */
+function getESTNow() {
+    return new Date(new Date().toLocaleString("en-US", {
+        timeZone: "America/New_York"
+    }));
+}
+
+function getDateString() {
     return getESTNow().toLocaleDateString("en-CA");
 }
 
-let currentDate = getESTDateString();
+let currentDate = getDateString();
 let value = 0;
 
 function updateClock() {
     const now = getESTNow();
-
-    const h = String(now.getHours()).padStart(2, "0");
-    const m = String(now.getMinutes()).padStart(2, "0");
-    const s = String(now.getSeconds()).padStart(2, "0");
-
-    clock.textContent = `${h}:${m}:${s} EST`;
+    clock.textContent =
+        String(now.getHours()).padStart(2,"0") + ":" +
+        String(now.getMinutes()).padStart(2,"0") + ":" +
+        String(now.getSeconds()).padStart(2,"0") + " EST";
 }
 
-function tick() {
-    const newDate = getESTDateString();
+/* 🎬 ALT EVENT (FADE VERSION) */
+function triggerAlt() {
+    if (altActive) return;
+    altActive = true;
 
-    // Reset at EST midnight
+    music.pause();
+
+    flash.style.display = "block";
+
+    // force reflow so transition works
+    requestAnimationFrame(() => {
+        flash.style.opacity = "1";
+    });
+
+    alt.currentTime = 0;
+    alt.play();
+
+    function endAlt() {
+        flash.style.opacity = "0";
+
+        setTimeout(() => {
+            flash.style.display = "none";
+        }, 600);
+
+        alt.pause();
+        music.play();
+        altActive = false;
+    }
+
+    alt.onended = endAlt;
+
+    setTimeout(() => {
+        if (altActive) endAlt();
+    }, 6000);
+}
+
+/* 1% chance per second */
+setInterval(() => {
+    if (Math.random() < 0.01) triggerAlt();
+}, 1000);
+
+/* MAIN LOOP (never stops) */
+function tick() {
+    const newDate = getDateString();
+
     if (newDate !== currentDate) {
         currentDate = newDate;
         value = 0;
     }
 
-    // Increase rapidly
     value += Math.floor(Math.random() * 9000) + 1000;
 
-    // Nearly unreadable effect
     counter.style.opacity = 0.02 + Math.random() * 0.03;
     counter.style.filter = `blur(${0.6 + Math.random() * 1.5}px)`;
     counter.style.transform =
@@ -126,7 +290,6 @@ function tick() {
     counter.textContent = value.toLocaleString();
 
     updateClock();
-
     requestAnimationFrame(tick);
 }
 
